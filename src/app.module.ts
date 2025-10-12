@@ -21,7 +21,7 @@ import { Post } from './posts/entities/post.entity';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        type: 'mysql', // <-- CHANGED to MySQL
+        type: 'mysql',
         host: config.get<string>('DATABASE_HOST'),
         port: config.get<number>('DATABASE_PORT'),
         username: config.get<string>('DATABASE_USER'),
