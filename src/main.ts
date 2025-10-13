@@ -6,9 +6,9 @@ async function bootstrap() {
     
   // 💡 ADD THIS LINE TO ENABLE CORS
   app.enableCors({
-    origin: ['https://blog-api-saas.vercel.app', 'http://localhost:3001'], // Allows all origins, or set to a specific array of domains
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', // Allowed methods
-    credentials: true, // Allows cookies/authorization headers
+    origin: '*', // 🛑 TEMPORARY: This allows all domains
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true, // Note: Setting credentials: true with origin: '*' can cause issues in some browsers
   }); 
 
   const port = process.env.PORT || 3000;
