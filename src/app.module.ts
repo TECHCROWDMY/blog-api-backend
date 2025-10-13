@@ -7,6 +7,8 @@ import { PostsModule } from './posts/posts.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { User } from './user/entities/user.entity';
 import { Post } from './posts/entities/post.entity';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -38,14 +40,16 @@ import { Post } from './posts/entities/post.entity';
         logging: ['query', 'error'],
       }),
     }),
-
-    // Feature Modules
     UsersModule,
     AuthModule,
     PostsModule,
     PublicApiModule,
   ],
-  controllers: [], // <-- This array must be empty as all controllers are in feature modules
-  providers: [], // <-- This array must be empty as all services are in feature modules
+  controllers: [
+    AppController
+  ],
+  providers: [
+    AppService
+  ],
 })
 export class AppModule {}
