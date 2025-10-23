@@ -6,7 +6,7 @@ async function bootstrap() {
     
   // 💡 ADD THIS LINE TO ENABLE CORS
   app.enableCors({
-    origin: '*', // 🛑 TEMPORARY: This allows all domains
+    origin: ['*', 'https://blog-api-saas.vercel.app'], // 🛑 TEMPORARY: This allows all domains
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true, // Note: Setting credentials: true with origin: '*' can cause issues in some browsers
   }); 
