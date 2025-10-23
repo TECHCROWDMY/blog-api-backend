@@ -1,4 +1,5 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UnauthorizedException, UseGuards, Request } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport'; // 💡 Import AuthGuard
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -14,6 +15,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @HttpCode(HttpStatus.OK) // Sets the response code to 200 for a successful login POST
   async login(@Body() loginDto: LoginDto) {
     // Call validateUser using email instead of username
     const user = await this.authService.validateUser(
@@ -29,4 +31,16 @@ export class AuthController {
     return this.authService.login(user);
   }
 
+  // 🚀 NEW ENDPOINT: /auth/me
+  @UseGuards(AuthGuard('jwt')) // 💡 Use the JWT guard to ensure the user is authenticated
+  @Get('me')
+  getProfile(@Request() req) {
+    // The AuthGuard('jwt') attaches the user payload (from the JWT) to the request object.
+    // Assuming your JWT strategy returns the user object:
+    
+    // We omit the password for security before returning the user object.
+    const { password, ...result } = req.user; 
+    
+    return result; 
+  }
 }
