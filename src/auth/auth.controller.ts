@@ -31,16 +31,11 @@ export class AuthController {
     return this.authService.login(user);
   }
 
-  // 🚀 NEW ENDPOINT: /auth/me
-  @UseGuards(AuthGuard('jwt')) // 💡 Use the JWT guard to ensure the user is authenticated
+  @UseGuards(AuthGuard('jwt'))
   @Get('me')
   getProfile(@Request() req) {
-    // The AuthGuard('jwt') attaches the user payload (from the JWT) to the request object.
-    // Assuming your JWT strategy returns the user object:
-    
-    // We omit the password for security before returning the user object.
-    const { password, ...result } = req.user; 
-    
-    return result; 
+    const { password, ...result } = req.user;
+    return { user: result }; 
   }
+
 }
