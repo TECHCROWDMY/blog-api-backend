@@ -39,6 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     return { 
         id: user.id, 
         username: user.username,
+        email: user.email
         // Omit sensitive data like email and password from the request object
     } as any; 
   }

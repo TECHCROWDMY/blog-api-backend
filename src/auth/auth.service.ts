@@ -1,11 +1,10 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
-import { UsersService } from 'src/user/user.service';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
 import { User } from 'src/user/entities/user.entity';
+import { UsersService } from 'src/user/user.service';
+import { Injectable, ConflictException } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
@@ -30,8 +29,6 @@ export class AuthService {
     const user = await this.usersService.findOneByEmail(email);
 
     if (user && (await bcrypt.compare(pass, user.password))) {
-      // Destructure password out of the returned object
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
       return result;
     }
@@ -75,7 +72,8 @@ export class AuthService {
    */
   async login(user: User) {
     const payload = { 
-        username: user.username, 
+        username: user.username,
+        email: user.email,
         sub: user.id 
     };
 
@@ -84,7 +82,9 @@ export class AuthService {
     return {
       access_token: this.jwtService.sign(payload, { expiresIn: jwtExpiration }),
       user_id: user.id,
+      user : user,
       username: user.username,
+      email: user.email
     };
   }
 

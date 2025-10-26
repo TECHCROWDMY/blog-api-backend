@@ -31,11 +31,22 @@ export class AuthController {
     return this.authService.login(user);
   }
 
+  // @UseGuards(AuthGuard('jwt'))
+  // @Get('me')
+  // getProfile(@Request() req) {
+  //   const { password, ...result } = req.user;
+  //   return { user: req.user }; 
+  // }
+
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
   getProfile(@Request() req) {
-    const { password, ...result } = req.user;
-    return { user: result }; 
+    const { password, ...userProfile } = req.user;
+    
+    // Return the clean user profile object, which explicitly includes the email.
+    return { 
+      user: userProfile 
+    }; 
   }
 
 }
