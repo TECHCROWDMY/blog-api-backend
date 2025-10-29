@@ -28,7 +28,6 @@ interface AuthRequest extends Request {
 export class PostsController {
   private readonly logger = new Logger(PostsController.name); 
 
-
   constructor(
     private readonly postsService: PostsService,
     private readonly usersService: UsersService, // 💡 3. INJECT UsersService
@@ -83,18 +82,15 @@ export class PostsController {
   // Maps to: GET /posts/api/:username/posts (or just /api/:username/posts 
   // depending on your main module prefix, let's use the full path)
   // =========================================================
-   @Get('/api/:username/posts')
+  @Get('/api/:username/posts')
   async apiFindAllByUsername(@Param('username') username: string) {
-    this.logger.debug(`[API] Received request for username: ${username}`);
     
     // 1. Look up the user by the username from the URL
     let user: { id: number, username: string };
     try {
         user = await this.usersService.findOneByUsername(username);
-        this.logger.debug(`[API] Successfully found user: ID=${user.id}, Username=${user.username}`);
     } catch (e) {
         if (e instanceof NotFoundException) {
-            this.logger.warn(`[API] User not found: ${username}`);
             // Return empty structure instead of 404 if user not found, 
             // as per your observed output {"username":"jane_doe","posts":[]}
             return { username, posts: [] };
@@ -105,12 +101,46 @@ export class PostsController {
     // 2. Fetch all posts belonging to that user ID
     const posts = await this.postsService.findAllByUser(user.id);
     
-    this.logger.debug(`[API] Fetched ${posts.length} posts for user ID ${user.id}`);
 
     // 3. Return the exact JSON structure requested
     return {
       username: user.username,
       posts: posts,
     };
+  }
+
+    /**
+   * NEW PUBLIC API ROUTE: Fetches a single published blog post by username and slug.
+   * Maps to: GET /posts/api/:username/:slug
+   */
+  @Get('/api/:username/posts/:slug')
+  async apiFindOneBySlug(
+    @Param('username') username: string,
+    @Param('slug') slug: string,
+  ) {
+    // 1. Look up the user by the username
+    let user: { id: number, username: string };
+    try {
+      user = await this.usersService.findOneByUsername(username);
+    } catch (e) {
+      // If user not found, treat it as Post not found for cleaner API error handling
+      if (e instanceof NotFoundException) {
+          throw new NotFoundException(`Post not found: User "${username}" or post with slug "${slug}" does not exist.`);
+      }
+      throw e;
+    }
+
+    // 2. Fetch the post matching the user ID and slug.
+    // NOTE: This assumes PostsService has a method like findOneBySlugAndUser 
+    // that also filters for published posts.
+    // If your service only has findOneById, you will need to update the service.
+    const post = await (this.postsService as any).findOneBySlugAndUser(user.id, slug);
+
+    if (!post) {
+      throw new NotFoundException(`Post with slug "${slug}" not found for user ${username}.`);
+    }
+
+    // 3. Return the post data
+    return post;
   }
 }
