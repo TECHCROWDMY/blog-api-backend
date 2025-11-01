@@ -4,12 +4,25 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
     
-  // 💡 ADD THIS LINE TO ENABLE CORS
   app.enableCors({
-    origin: ['*', 'http://localhost:3001', 'https://blog-api-saas.vercel.app'], // 🛑 TEMPORARY: This allows all domains
+    // Use a function to dynamically check the origin
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        'http://localhost:3001',
+        'https://blog-api-saas.vercel.app'
+      ];
+
+      // Allow requests with no origin (e.g., Postman, server-to-server) OR if the origin is in the list
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        // This will trigger the CORS error
+        callback(new Error('Not allowed by CORS')); 
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true, // Note: Setting credentials: true with origin: '*' can cause issues in some browsers
-  }); 
+    credentials: true,
+  });
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
