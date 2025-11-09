@@ -9,6 +9,8 @@ import { User } from './user/entities/user.entity';
 import { Post } from './posts/entities/post.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ProjectsModule } from './projects/projects.module';
+import { Project } from './projects/entities/project.entity'; 
 
 @Module({
   imports: [
@@ -31,7 +33,7 @@ import { AppService } from './app.service';
         database: config.get<string>('DATABASE_NAME'),
         
         // Auto-load all entities defined in the project structure
-        entities: [User, Post],
+        entities: [User, Post, Project],
         
         // Synchronize is great for development, DON'T use in production!
         synchronize: true, 
@@ -44,6 +46,7 @@ import { AppService } from './app.service';
     AuthModule,
     PostsModule,
     PublicApiModule,
+    ProjectsModule,
   ],
   controllers: [
     AppController

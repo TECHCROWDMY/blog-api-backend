@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreatePostDto {
   @IsString()
@@ -8,7 +8,6 @@ export class CreatePostDto {
 
   @IsString()
   @IsNotEmpty()
-  // Slug is generated from the title but can be provided manually
   slug?: string;
 
   @IsString()
@@ -23,4 +22,9 @@ export class CreatePostDto {
   @IsString({ each: true })
   @IsOptional()
   tags?: string[];
+
+  // This must match the foreign key column (projectId)
+  @IsNumber()
+  @Min(1)
+  projectId: number; 
 }

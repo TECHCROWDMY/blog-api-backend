@@ -65,24 +65,24 @@ export class AuthService {
   }
 
   /**
-   * Validates user credentials and returns a JWT token.
-   */
-  /**
-   * Generates a JWT access token for a validated user.
-   */
+    * Generates a JWT access token for a validated user.
+    * @param user The validated user entity.
+    */
   async login(user: User) {
     const payload = { 
-        username: user.username,
-        email: user.email,
-        sub: user.id 
+      id: user.id, 
+      username: user.username,
+      email: user.email,
     };
 
     const jwtExpiration = this.configService.get<string>('JWT_EXPIRATION_TIME') || '3600s';
+    
+    const token = this.jwtService.sign(payload, { expiresIn: jwtExpiration });
 
+    // Clean up the response for the client
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: jwtExpiration }),
-      user_id: user.id,
-      user : user,
+      access_token: token,
+      id: user.id,
       username: user.username,
       email: user.email
     };

@@ -1,118 +1,132 @@
 import { 
   Controller, 
   Get, 
-  Post as HttpPost, 
+  Post as HttpPost, // Renamed Post to HttpPost to avoid clash with Post entity
   Body, 
   Param, 
   Delete, 
-  Put, 
+  Put, // Using Put for idempotent update
   UseGuards,
   Req,
   Logger,
-  NotFoundException
-} from '@nestjs/common';
+  NotFoundException,
+  ParseIntPipe
+} from '@nestjs/common'; 
+import { Request } from 'express';
 import { PostsService } from './posts.service';
-import { UsersService } from '../user/user.service'; // 💡 1. IMPORT UsersService
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { UsersService } from '../user/user.service'; // Required for public API routes
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { Request } from 'express';
 
-// Define the structure of the user object available after JWT validation
+// Interface matching the JwtStrategy return (for req.user typing)
 interface AuthRequest extends Request {
-  user: { id: number, username: string };
+  user: { id: number, username: string, email: string };
 }
 
-// 💡 2. REMOVED @UseGuards(JwtAuthGuard) from the class level
 @Controller('posts')
 export class PostsController {
   private readonly logger = new Logger(PostsController.name); 
 
   constructor(
     private readonly postsService: PostsService,
-    private readonly usersService: UsersService, // 💡 3. INJECT UsersService
+    private readonly usersService: UsersService, // Injected for public API
   ) {}
 
   // =========================================================
   // AUTHENTICATED ROUTES (Require JWT)
+  // Ownership is checked in the service via Project ownership.
   // =========================================================
 
-  @UseGuards(JwtAuthGuard) // 💡 Now only protects this route
+  @UseGuards(JwtAuthGuard) 
   @HttpPost()
-  create(@Body() createPostDto: CreatePostDto, @Req() req: AuthRequest) {
+  async create(
+    @Body() body: any, // Use 'any' for manual mapping of the 'project' field
+    @Req() req: AuthRequest
+  ) {
     const userId = req.user.id;
+
+    // Manual mapping from body.project to createPostDto.projectId
+    const createPostDto: CreatePostDto = {
+        title: body.title,
+        slug: body.slug,
+        content: body.content,
+        tags: body.tags,
+        projectId: body.projectId, // Map the incoming 'project' key to 'projectId'
+    };
+    
+    // 🛑 FIX: Calling the service with (userId, createPostDto) to match the service signature
+    // The service verifies that userId owns the projectId before creation.
     return this.postsService.create(userId, createPostDto);
   }
 
-  @UseGuards(JwtAuthGuard) // 💡 Now only protects this route
+  @UseGuards(JwtAuthGuard) 
   @Get()
-  findAll(@Req() req: AuthRequest) {
-    // This route remains for the authenticated user's dashboard
+  /**
+   * Retrieves all posts belonging to the projects owned by the authenticated user (Dashboard view).
+   */
+  findAllByProjects(@Req() req: AuthRequest) {
     const userId = req.user.id;
-    return this.postsService.findAllByUser(userId);
+    // Service fetches posts based on projects owned by userId
+    return this.postsService.findAllByProjects(userId); 
   }
 
-  @UseGuards(JwtAuthGuard) // 💡 Now only protects this route
+  @UseGuards(JwtAuthGuard) 
   @Get(':id')
-  findOne(@Param('id') id: string, @Req() req: AuthRequest) {
+  findOne(@Param('id', ParseIntPipe) id: number, @Req() req: AuthRequest) {
     const userId = req.user.id;
-    return this.postsService.findOneById(+id, userId);
+    // Service fetches post and ensures the post's parent project is owned by userId.
+    return this.postsService.findOneById(id, userId);
   }
 
-  @UseGuards(JwtAuthGuard) // 💡 Now only protects this route
-  @Put(':id')
+  @UseGuards(JwtAuthGuard) 
+  @Put(':id') // Using Put for idempotent update
   update(
-    @Param('id') id: string, 
+    @Param('id', ParseIntPipe) id: number, 
     @Body() updatePostDto: UpdatePostDto,
     @Req() req: AuthRequest,
   ) {
     const userId = req.user.id;
-    return this.postsService.update(+id, userId, updatePostDto);
+    // Service performs ownership and validation checks
+    return this.postsService.update(id, userId, updatePostDto);
   }
 
-  @UseGuards(JwtAuthGuard) // 💡 Now only protects this route
+  @UseGuards(JwtAuthGuard) 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: AuthRequest) {
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: AuthRequest) {
     const userId = req.user.id;
-    return this.postsService.remove(+id, userId);
+    // Service performs ownership check before deleting
+    return this.postsService.remove(id, userId);
   }
-  
+
   // =========================================================
-  // PUBLIC API ROUTE (No JWT Guard)
-  // Maps to: GET /posts/api/:username/posts (or just /api/:username/posts 
-  // depending on your main module prefix, let's use the full path)
+  // PUBLIC API ROUTES (No JWT Guard)
   // =========================================================
+
   @Get('/api/:username/posts')
   async apiFindAllByUsername(@Param('username') username: string) {
     
-    // 1. Look up the user by the username from the URL
+    // 1. Look up the public user by username
     let user: { id: number, username: string };
     try {
         user = await this.usersService.findOneByUsername(username);
     } catch (e) {
         if (e instanceof NotFoundException) {
-            // Return empty structure instead of 404 if user not found, 
-            // as per your observed output {"username":"jane_doe","posts":[]}
+            // If user not found, return empty list instead of 404
             return { username, posts: [] };
         }
-        throw e; // Re-throw other errors
+        throw e; 
     }
 
-    // 2. Fetch all posts belonging to that user ID
-    const posts = await this.postsService.findAllByUser(user.id);
+    // 2. Fetch all posts associated with projects owned by that user ID
+    const posts = await this.postsService.findAllByProjects(user.id);
     
-
-    // 3. Return the exact JSON structure requested
     return {
       username: user.username,
       posts: posts,
     };
   }
 
-    /**
-   * NEW PUBLIC API ROUTE: Fetches a single published blog post by username and slug.
-   * Maps to: GET /posts/api/:username/:slug
-   */
   @Get('/api/:username/posts/:slug')
   async apiFindOneBySlug(
     @Param('username') username: string,
@@ -123,24 +137,28 @@ export class PostsController {
     try {
       user = await this.usersService.findOneByUsername(username);
     } catch (e) {
-      // If user not found, treat it as Post not found for cleaner API error handling
       if (e instanceof NotFoundException) {
           throw new NotFoundException(`Post not found: User "${username}" or post with slug "${slug}" does not exist.`);
       }
       throw e;
     }
 
-    // 2. Fetch the post matching the user ID and slug.
-    // NOTE: This assumes PostsService has a method like findOneBySlugAndUser 
-    // that also filters for published posts.
-    // If your service only has findOneById, you will need to update the service.
-    const post = await (this.postsService as any).findOneBySlugAndUser(user.id, slug);
+    // 2. Find all project IDs owned by the user
+    const projects = await this.postsService.findAllProjectsByUserId(user.id);
+    const projectIds = projects.map(p => p.id);
+
+    if (projectIds.length === 0) {
+        throw new NotFoundException(`Post with slug "${slug}" not found for user ${username}.`);
+    }
+
+    // 3. Search for the post across all projects owned by the user
+    const post = await this.postsService.findOneBySlugAndProjectIds(projectIds, slug);
 
     if (!post) {
       throw new NotFoundException(`Post with slug "${slug}" not found for user ${username}.`);
     }
 
-    // 3. Return the post data
+    // 4. Return the post data
     return post;
   }
 }

@@ -8,7 +8,7 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('register')
+  @Post('signup')
   async register(@Body() registerDto: RegisterDto) {
     const user = await this.authService.register(registerDto);
     return { message: 'User registered successfully', username: user.username, email: user.email };
@@ -31,19 +31,10 @@ export class AuthController {
     return this.authService.login(user);
   }
 
-  // @UseGuards(AuthGuard('jwt'))
-  // @Get('me')
-  // getProfile(@Request() req) {
-  //   const { password, ...result } = req.user;
-  //   return { user: req.user }; 
-  // }
-
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
   getProfile(@Request() req) {
     const { password, ...userProfile } = req.user;
-    
-    // Return the clean user profile object, which explicitly includes the email.
     return { 
       user: userProfile 
     }; 

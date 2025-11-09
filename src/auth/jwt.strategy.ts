@@ -7,7 +7,7 @@ import { User } from 'src/user/entities/user.entity';
 
 // Define the shape of the JWT payload
 export interface JwtPayload {
-  userId: number;
+  id: number;
   username: string;
 }
 
@@ -29,7 +29,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    * If valid, it returns the user object which is attached to req.user.
    */
   async validate(payload: JwtPayload): Promise<User | never> {
-    const user = await this.usersService.findOneById(payload.userId);
+    const user = await this.usersService.findOneById(payload.id);
 
     if (!user) {
       throw new UnauthorizedException();

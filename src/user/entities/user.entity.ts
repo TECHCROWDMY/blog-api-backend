@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm';
-import { Post } from 'src/posts/entities/post.entity';
+import { Project } from 'src/projects/entities/project.entity';
 
 @Entity('users')
 export class User {
@@ -15,8 +15,13 @@ export class User {
   @Column()
   password: string; // Hashed password
 
-  @OneToMany(() => Post, (post) => post.user)
-  posts: Post[];
+  // @OneToMany(() => Post, (post) => post.user)
+  // posts: Post[];
+
+  // --- NEW RELATIONSHIP: USER to PROJECTS ---
+  // A User can have many Projects (One-to-Many)
+  @OneToMany(() => Project, (project) => project.user)
+  projects: Project[];
 
   @CreateDateColumn()
   createdAt: Date;

@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
-import { Post } from './entities/post.entity';
-import { PostsService } from './posts.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersModule } from '../user/user.module';
+import { PostsService } from './posts.service';
 import { PostsController } from './posts.controller';
+import { Post } from './entities/post.entity';
+import { Project } from '../projects/entities/project.entity'; // Import Project entity
+import { UsersModule } from '../user/user.module'; // Required for the PostsController's public API
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Post]),
+    TypeOrmModule.forFeature([Post, Project]), 
     UsersModule
   ],
   controllers: [PostsController],

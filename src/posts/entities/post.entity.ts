@@ -4,13 +4,16 @@ import {
   Column, 
   ManyToOne, 
   CreateDateColumn, 
+  UpdateDateColumn, // <-- Re-added
   Unique 
 } from 'typeorm';
-import { User } from 'src/user/entities/user.entity';
+// import { User } from 'src/user/entities/user.entity'; // Keep commented or remove
+import { Project } from 'src/projects/entities/project.entity';
 
 @Entity('posts')
-// Constraint to ensure the slug is unique for a given user.
-@Unique(['user', 'slug']) 
+// 🔑 FIX: Constraint must use the existing foreign key 'projectId' 
+// to ensure the slug is unique ONLY within its parent project.
+@Unique(['projectId', 'slug']) 
 export class Post {
   @PrimaryGeneratedColumn()
   id: number;
@@ -27,18 +30,24 @@ export class Post {
   @Column({ nullable: true })
   image: string;
 
-  // 'simple-array' type stores array as a comma-separated string in Postgres
+  // 'simple-array' type stores array as a comma-separated string
   @Column('simple-array', { nullable: true })
   tags: string[];
 
-  // Relation to User entity
-  @ManyToOne(() => User, (user) => user.posts, { onDelete: 'CASCADE' })
-  user: User;
-  
-  // This column will store the user ID (foreign key)
+  // --- RELATIONSHIP TO PROJECT (MANY-TO-ONE) ---
+  @ManyToOne(() => Project, (project) => project.posts, { 
+    onDelete: 'CASCADE', 
+    nullable: false, 
+  })
+  project: Project;
+
+  // This column stores the foreign key (project.id)
   @Column()
-  userId: number; 
+  projectId: number;
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn() // <-- Re-added for tracking last update time
+  updatedAt: Date;
 }
