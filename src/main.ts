@@ -8,8 +8,10 @@ async function bootstrap() {
     // Use a function to dynamically check the origin
     origin: (origin, callback) => {
       const allowedOrigins = [
-        'http://localhost:3001',
-        'https://blog-api-saas.vercel.app'
+        'http://localhost:3001',      // Your frontend dev server (if it runs on HTTP)
+        'http://localhost:3000',      // Just in case it runs on the default port
+        'https://blog-api-saas.vercel.app', // HTTPS for Vercel
+        'http://blog-api-saas.vercel.app'  // In case Vercel redirects or for testing
       ];
 
       // Allow requests with no origin (e.g., Postman, server-to-server) OR if the origin is in the list
